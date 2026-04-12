@@ -1,0 +1,5 @@
+neo_env_310/
+__pycache__/
+.env
+*.dll
+*.exe

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEO Control Panel</title>
+    <style>
+        body {
+            background: black;
+            color: lime;
+            font-family: monospace;
+            text-align: center;
+        }
+        button {
+            padding: 10px;
+            margin: 10px;
+            background: lime;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🤖 NEO Control Panel</h1>
+
+<button onclick="checkStatus()">Check Status</button>
+<button onclick="startVision()">Start Vision</button>
+
+<pre id="output"></pre>
+
+<script>
+async function checkStatus() {
+    let res = await fetch("http://127.0.0.1:8000/");
+    let data = await res.json();
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+
+async function startVision() {
+    let res = await fetch("http://127.0.0.1:8000/vision/start");
+    let data = await res.json();
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+</script>
+
+</body>
+</html>

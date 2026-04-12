@@ -1,0 +1,61 @@
+# NEO AI OS - requirements.txt
+
+# =========================
+# Core
+# =========================
+fastapi
+uvicorn
+pydantic
+
+# =========================
+# Async & Networking
+# =========================
+httpx
+aiofiles
+
+# =========================
+# System Monitoring
+# =========================
+psutil
+
+# =========================
+# AI / NLP
+# =========================
+numpy
+scikit-learn
+
+# =========================
+# Vision
+# =========================
+opencv-python
+pillow
+
+# =========================
+# Voice
+# =========================
+speechrecognition
+pyttsx3
+pyaudio
+
+# =========================
+# Security / Crypto
+# =========================
+cryptography
+
+# =========================
+# DevOps
+# =========================
+docker
+
+# =========================
+# Utilities
+# =========================
+python-dotenv
+rich
+
+# =========================
+# Optional (Advanced AI / LLM)
+# =========================
+openai
+transformers
+torch

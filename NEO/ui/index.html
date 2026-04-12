@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEO AI</title>
+    <style>
+        body {
+            background: black;
+            color: cyan;
+            font-family: monospace;
+            text-align: center;
+        }
+        button {
+            padding: 10px;
+            margin: 10px;
+            background: cyan;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🤖 NEO AI CONTROL</h1>
+
+<button onclick="status()">Check Status</button>
+
+<pre id="output"></pre>
+
+<script>
+async function status() {
+    let res = await fetch("http://127.0.0.1:8000/");
+    let data = await res.json();
+    document.getElementById("output").innerText = JSON.stringify(data, null, 2);
+}
+</script>
+
+</body>
+</html>
