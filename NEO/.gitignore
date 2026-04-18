@@ -1,4 +1,3 @@
 neo_env_310/
-__pycache__/
-*.pyc
-.env
+logs/
+models/

@@ -202,9 +202,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle_signal)
     signal.signal(signal.SIGTERM, handle_signal)
 
-    system.boot()
+    #system.boot()
 
-from fastapi import WebSocket
 
 clients = []
 
@@ -214,7 +213,7 @@ import asyncio
 
 app = FastAPI()
 
-# CORS settings zaroori hain taaki React connect kar sake
+# CORS (React ke liye)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -222,21 +221,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-clients = [] # Saare connected browsers ki list
+clients = []
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     clients.append(websocket)
     print(f"NEW CLIENT CONNECTED: {len(clients)}")
+
     try:
         while True:
             data = await websocket.receive_text()
-            # Jo tu bhejega, NEO uska reply karega
+            print("RECEIVED:", data)
+
+            # reply bhej
             await websocket.send_text(f"NEO RESPONSE: {data}")
-    except:
+
+    except Exception as e:
+        print("ERROR:", e)
+
+    finally:
         if websocket in clients:
-             clients.remove(websocket)
+            clients.remove(websocket)
+        print("CLIENT DISCONNECTED")
 
 # Ye function har 2 second mein "System Active" ka signal bhejega
 async def send_logs():
@@ -250,6 +257,7 @@ async def send_logs():
 
 @app.on_event("startup")
 async def startup_event():
+    print("🚀 NEO BACKEND STARTED")
     asyncio.create_task(send_logs())
 
 from fastapi.middleware.cors import CORSMiddleware

@@ -48,6 +48,7 @@ class IntrusionDetectionSystem:
     """
 
     def __init__(self):
+        self.guard = TrustedGuard()
         self.event_bus = GlobalEventBus
         self._lock = threading.RLock()
 
@@ -150,7 +151,7 @@ class IntrusionDetectionSystem:
 
                 if reputation < 0.3:
                  if self.guard.is_safe(ip):
-                    self.logger.info(f"[IDS] ✅ Trusted IP: {ip}")
+                    self.logger.info(f"[IDS] Trusted IP: {ip}")
                     return
 
                     self.logger.warning(f"[IDS] ⚠️ Suspicious IP: {ip}")

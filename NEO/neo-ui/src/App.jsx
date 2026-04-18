@@ -447,11 +447,29 @@ function ChatPanel({ sendWS }) {
     setInput("");
     sendWS?.(txt);
     setThinking(true);
-    setTimeout(() => {
-      const resp = AI_RESPONSES[randBetween(0, AI_RESPONSES.length - 1)];
-      setMessages(m => [...m, { id: Date.now()+1, isAI:true, text:resp, time:timestamp() }]);
+    const streamResponse = (fullText) => {
+  let i = 0;
+  const id = Date.now();
+
+  setMessages(m => [...m, { id, isAI: true, text: "", time: timestamp() }]);
+
+  const interval = setInterval(() => {
+    i += randBetween(2, 5);
+
+    setMessages(m =>
+      m.map(msg =>
+        msg.id === id
+          ? { ...msg, text: fullText.slice(0, i) }
+          : msg
+      )
+    );
+
+    if (i >= fullText.length) {
+      clearInterval(interval);
       setThinking(false);
-    }, randBetween(800, 2000));
+    }
+  }, 30 + Math.random() * 40);
+  };
   };
 
   const onKey = (e) => {
@@ -473,6 +491,11 @@ function ChatPanel({ sendWS }) {
     <div className="glass glow-box-blue corner-tl corner-br" style={{
       position:"relative", height:"100%", display:"flex", flexDirection:"column", overflow:"hidden",
     }}>
+    {messages.map((m, i) => (
+  <div key={i}>
+    {m.sender}: {m.text}
+  </div>
+))}
       <div style={{ padding:"10px 14px", borderBottom:"1px solid rgba(0,170,255,0.2)", display:"flex", alignItems:"center", gap:8 }}>
         <div style={{ width:6, height:6, borderRadius:"50%", background:"#00aaff", boxShadow:"0 0 6px #00aaff" }} className="pulse" />
         <span className="orbitron glow-blue" style={{ fontSize:10, letterSpacing:3 }}>AI INTERFACE</span>
@@ -649,7 +672,7 @@ function Dashboard({ logs, stats, sendWS }) {
       {/* Log + Chat */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, overflow:"hidden" }}>
         <LogPanel logs={logs} />
-        <ChatPanel sendWS={sendWS} />
+        <ChatPanel sendWS={sendWS} messages={messages} />
       </div>
     </div>
   );
@@ -658,7 +681,7 @@ function Dashboard({ logs, stats, sendWS }) {
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [wsUrl, setWsUrl] = useState("ws://localhost:8000/ws");
+  const [wsUrl, setWsUrl] = useState("ws://127.0.0.1:8000/ws");
   const [wsStatus, setWsStatus] = useState("DISCONNECTED");
   const [logs, setLogs] = useState([]);
   const [notifs, setNotifs] = useState([]);
@@ -671,6 +694,33 @@ export default function App() {
       { level:"MED",  type:"PORT SCAN",     src:"10.0.0.x" },
     ],
   });
+
+const useFPS = () => {
+  const [fps, setFps] = useState(0);
+  const frame = useRef(0);
+  const last = useRef(performance.now());
+
+  useEffect(() => {
+    let raf;
+
+    const loop = (now) => {
+      frame.current++;
+
+      if (now - last.current >= 1000) {
+        setFps(frame.current);
+        frame.current = 0;
+        last.current = now;
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return fps;
+};
 
   const wsRef = useRef(null);
   const notifIdRef = useRef(0);
@@ -692,56 +742,49 @@ export default function App() {
 
   // WebSocket
   const connectWS = useCallback(() => {
-    if (wsRef.current) wsRef.current.close();
-    setWsStatus("CONNECTING");
-    pushLog(`Initiating WebSocket connection to ${wsUrl}…`, "SYS");
-    sfx.connect();
-    try {
-      const ws = new WebSocket("ws://127.0.0.1:8000/ws");
-      wsRef.current = ws;
-      ws.onopen = () => {
-        setWsStatus("CONNECTED");
-        pushLog("WebSocket handshake complete. Secure channel established.", "SUCCESS");
-        pushNotif("WebSocket connected successfully.", "WS", "#00ffcc");
-      };
-    ws.onmessage = (e) => {
+  if (wsRef.current) return;
+
+  setWsStatus("CONNECTING");
+  pushLog("Initiating WebSocket connection...", "SYS");
+
   try {
-    let data;
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws");
 
-    try {
-      data = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
-    } catch {
-      data = null;
-    }
+    wsRef.current = ws;
 
-    if (data && data.type === "system") {
-      setCpu(data.cpu || 0);
-      setRam(data.ram || 0);
-      setClients(data.clients || 0);
-    } else {
-      pushLog(String(e.data), "AI");
-    }
+    ws.onopen = () => {
+      setWsStatus("CONNECTED");
+      pushLog("WebSocket connected", "SUCCESS");
+      pushNotif("Connected", "WS", "#00ffcc");
+    };
+
+    ws.onmessage = (e) => {
+  const msg = e.data;
+
+  // logs me show hoga
+  pushLog(msg, "AI");
+
+  // 🔥 UI chat me show hoga
+  setMessages(prev => [
+    ...prev,
+    { sender: "neo", text: msg }
+  ]);
+};
+
+ws.onerror = (err) => {
+  console.log("WS ERROR:", err);
+};
+
+    ws.onclose = () => {
+      setWsStatus("DISCONNECTED");
+      wsRef.current = null;
+      setTimeout(() => connectWS(), 2000);
+    };
 
   } catch (err) {
-    console.log("onmessage error:", err);
+    console.log("WS FAILED:", err);
   }
-};
-    ws.onerror = (err) => {
-    console.log("WS ERROR:", err);
-
-     // ❗ sirf log kar, UI disturb mat kar
-    };
-   
-      ws.onclose = () => {
-        setWsStatus("DISCONNECTED");
-        pushLog("WebSocket connection closed.", "WARN");
-    };
-    } catch (e) {
-      setWsStatus("ERROR");
-      pushLog(`Connection failed: ${e.message}`, "ERROR");
-      sfx.error();
-    }
-  }, [wsUrl, pushLog, pushNotif]);
+}, []);
 
   const sendWS = (msg) => {
     pushLog(`TX → ${msg}`, "DATA");
@@ -825,9 +868,41 @@ export default function App() {
       </main>
     </>
   );
+
+
+const [uptime, setUptime] = useState(0);
+
+useEffect(() => {
+  const iv = setInterval(() => setUptime(u => u + 1), 1000);
+  return () => clearInterval(iv);
+}, []);
+
+const parseCommand = (cmd) => {
+  if (cmd === "clear") {
+    setLogs([]);
+    return "Logs cleared.";
+  }
+  if (cmd === "status") {
+    return "All systems operational.";
+  }
+  return null;
+};
+const local = parseCommand(txt);
+if (local) {
+  setMessages(m => [...m, {
+    id: Date.now(),
+    isAI: true,
+    text: local,
+    time: timestamp()
+  }]);
+  return;
 }
 
-ws.onclose = () => {
-  console.log("WS CLOSED");
-  setWsStatus("DISCONNECTED");
-};
+const [theme, setTheme] = useState("dark");
+
+const fpsColor = fps > 50 ? "#00ffcc" : fps > 30 ? "#ffaa00" : "#ff003c";
+
+<div style={{ fontSize:9, color:"#3a6a58" }}>
+  FPS: <span style={{ color:"#00ffcc" }}>{fps}</span>
+</div>
+}
