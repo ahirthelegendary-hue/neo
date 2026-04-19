@@ -34,7 +34,9 @@ import logging
 import traceback
 import signal
 import sys
+import pytesseract
 
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # Core
 from core.event_bus import GlobalEventBus
@@ -85,6 +87,23 @@ from logs.logger import GlobalLogger
 from plugins.plugin_manager import GlobalPluginManager
 
 from security.intrusion_detection import GlobalIDS
+from fastapi import FastAPI, WebSocket
+
+app = FastAPI()
+
+@app.get("/")
+def home():
+    return {"msg": "server running"}
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        try:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"NEO: {data}")
+        except:
+            break
 
 class NEOSystem:
     """

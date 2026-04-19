@@ -491,11 +491,7 @@ function ChatPanel({ sendWS }) {
     <div className="glass glow-box-blue corner-tl corner-br" style={{
       position:"relative", height:"100%", display:"flex", flexDirection:"column", overflow:"hidden",
     }}>
-    {messages.map((m, i) => (
-  <div key={i}>
-    {m.sender}: {m.text}
-  </div>
-))}
+   ))
       <div style={{ padding:"10px 14px", borderBottom:"1px solid rgba(0,170,255,0.2)", display:"flex", alignItems:"center", gap:8 }}>
         <div style={{ width:6, height:6, borderRadius:"50%", background:"#00aaff", boxShadow:"0 0 6px #00aaff" }} className="pulse" />
         <span className="orbitron glow-blue" style={{ fontSize:10, letterSpacing:3 }}>AI INTERFACE</span>
@@ -659,7 +655,7 @@ function StatCard({ label, value, sub, color, icon }) {
 }
 
 // ─── Dashboard View ───────────────────────────────────────────────────────────
-function Dashboard({ logs, stats, sendWS }) {
+function Dashboard({ logs, stats, sendWS, messages, setMessages }) {
   return (
     <div style={{ display:"grid", gridTemplateRows:"auto 1fr", gap:12, height:"100%" }}>
       {/* Stat cards */}
@@ -672,7 +668,7 @@ function Dashboard({ logs, stats, sendWS }) {
       {/* Log + Chat */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, overflow:"hidden" }}>
         <LogPanel logs={logs} />
-        <ChatPanel sendWS={sendWS} messages={messages} />
+        <ChatPanel sendWS={sendWS} messages={messages} setMessages={setMessages} />
       </div>
     </div>
   );
@@ -680,6 +676,9 @@ function Dashboard({ logs, stats, sendWS }) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const [messages, setMessages] = useState([
+  { id: 0, isAI: true, text: "NEO AI SYSTEM v3.0 initialized..." }
+]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [wsUrl, setWsUrl] = useState("ws://127.0.0.1:8000/ws");
   const [wsStatus, setWsStatus] = useState("DISCONNECTED");
@@ -842,12 +841,42 @@ ws.onerror = (err) => {
   }, [pushLog]);
 
   const TABS = {
-    dashboard: <Dashboard logs={logs} stats={stats} sendWS={sendWS} />,
-    logs:      <div style={{ height:"100%" }}><LogPanel logs={logs} /></div>,
-    chat:      <div style={{ height:"100%" }}><ChatPanel sendWS={sendWS} /></div>,
-    monitor:   <div style={{ overflowY:"auto", height:"100%" }}><SystemMonitor stats={stats} /></div>,
-    settings:  <SettingsPanel wsUrl={wsUrl} setWsUrl={setWsUrl} onReconnect={connectWS} />,
-  };
+  dashboard: (
+    <Dashboard 
+      logs={logs} 
+      stats={stats} 
+      sendWS={sendWS} 
+      messages={messages} 
+      setMessages={setMessages} 
+    />
+  ),
+
+  logs: (
+    <div style={{ height: "100%" }}>
+      <LogPanel logs={logs} />
+    </div>
+  ),
+
+  chat: (
+    <div style={{ height: "100%" }}>
+      <ChatPanel sendWS={sendWS} />
+    </div>
+  ),
+
+  monitor: (
+    <div style={{ overflowY: "auto", height: "100%" }}>
+      <SystemMonitor stats={stats} />
+    </div>
+  ),
+
+  settings: (
+    <SettingsPanel 
+      wsUrl={wsUrl} 
+      setWsUrl={setWsUrl} 
+      onReconnect={connectWS} 
+    />
+  ),
+};
 
   return (
     <>
@@ -901,7 +930,7 @@ if (local) {
 const [theme, setTheme] = useState("dark");
 
 const fpsColor = fps > 50 ? "#00ffcc" : fps > 30 ? "#ffaa00" : "#ff003c";
-
+ 
 <div style={{ fontSize:9, color:"#3a6a58" }}>
   FPS: <span style={{ color:"#00ffcc" }}>{fps}</span>
 </div>
